@@ -15,20 +15,8 @@ class db
 
     public function __construct()
     {
-        // Set DSN
-        $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->dbname;
-        // Set options
-        $options = [
-            PDO::ATTR_PERSISTENT => true,
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        ];
-        // Create a new PDO instanace
-        try {
-            $this->bdh = new PDO($dsn, $this->user, $this->pass, $options);
-        } catch (PDOException $e) {
-            // Catch any errors
-            $this->error = $e->getMessage();
-        }
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    $this->bdh = new mysqli($this->host,$this->user,$this->pass,$this->dbname);
     }
 }
 
@@ -56,15 +44,13 @@ class User extends db
         // Cryptage de MDP
         $password = password_hash($password, CRYPT_BLOWFISH);
         // Requete SQL : 
-        $sqlNewUser = ('INSERT INTO utilisateurs (login, password, email, firstname, lastname) VALUES (?,?,?,?,?)');
-        $insertmbr = $this->bdh->prepare($sqlNewUser);
-        $insertmbr->execute(array($login, $password, $email, $firstname, $lastname));
+        $sqlNewUser = ('INSERT INTO utilisateurs (login, password, email, firstname, lastname) VALUES ($login,$password,$email,$firstname,$lastname)');
+        $insertmbr = mysqli_query($this->bdh, $sqlNewUser);
 
         if ($insertmbr == true) {
-            $sqlUser = "SELECT * from UTILISATEURS WHERE login = '$login'";
+            $sqlUser = "SELECT * FROM utilisateurs WHERE login = '$this->_login'";
             $req = $this->bdh->prepare($sqlUser);
-            $req->execute();
-            $infoUser = $req->Fetch();
+            $infoUser = $req->fetch();
             return $infoUser;
         } else {
             echo "Pas bon";
@@ -73,9 +59,8 @@ class User extends db
     public function connexion($login, $password)
     {
         $SqlVerifUtilisateur = "SELECT * FROM UTILISATEURS WHERE login = '$login'";
-        $prepVerif = $this->bdh->prepare($SqlVerifUtilisateur);
-        $prepVerif->execute(array($login));
-        $infoLogin = $prepVerif->fetchAll();
+        $prepVerif = mysqli_query($this->bdh, $SqlVerifUtilisateur);
+        $infoLogin = mysqli_fetch_assoc($prepVerif);
         if (count($infoLogin) > 0) {
             $SqlPassword = $infoLogin[0]['password'];
             if (password_verify($password, $SqlPassword)) {
@@ -102,20 +87,18 @@ class User extends db
         exit();
     }
 
-    public function delete($email)
+    public function delete()
     {
-        $reqdeleteutilisateur = "DELETE * FROM utilisateurs where email = '$email'";
-        $prepdeleteutilisateur = $this->bdh->prepare($reqdeleteutilisateur);
-        $executerequetedelete = $prepdeleteutilisateur->execute();
+        $reqdeleteutilisateur = "DELETE * FROM utilisateurs where email = '$this->_email'";
+        $prepDel = mysqli_query($this->bdh, $reqdeleteutilisateur);
         unset($_SESSION['profil']);
         // header('location: index.php'); 
         exit();
     }
     public function update($login, $password, $email, $firstname, $lastname)
     {
-        $requpdateutilisateur = "UPDATE utilisateurs SET login = ? , password = ? , email = ? , firstname = ? , lastname = ? WHERE email = '$this->_email'";;
-        $prepupdatetilisateur = $this->bdh->prepare($requpdateutilisateur);
-        $executerequeteupdate = $prepupdatetilisateur->execute($login, $password, $email, $firstname, $lastname);
+        $requpdateutilisateur = "UPDATE utilisateurs SET login = $login , password = $password , email = $email , firstname = $firstname , lastname = $lastname WHERE email = '$this->_email'";;
+        $update = mysqli_query($this->bdh,$requpdateutilisateur);
     }
     public function isConnected()
     {
@@ -127,63 +110,60 @@ class User extends db
         }
         return $Suisjeconnecter;
     }
-    public function getAllInfos()
+    public function getAllinfo()
     {
-        if ($this->isConnected() == true) {
-            $requtilisateur = $this->bdh->prepare('SELECT * FROM utilisateurs WHERE email = ?');
-            $requtilisateur->execute(array($_SESSION['email']));
-            $infoutilisateur = $requtilisateur->fetch();
-            return $infoutilisateur;
+        if ($this->isConnected() === true) {
+
+            $array = [
+
+                'login' => $this->_login,
+                'email' => $this->_email,
+                'firstname' => $this->_firstname,
+                'lastname' => $this->_lastname,
+            ];
+            return $array;
         } else {
-            echo "C'est pas bon";
+            return false;
         }
     }
-    public function GetLogin()
+    // retourne le login de l'utilisateur connecté
+    public function getLogin()
     {
-        if ($this->isConnected() == true) 
-        {
-            $requetegetlogin = $this->bdh->prepare('SELECT login from utilisateurs WHERE email = ?');
-            $requetegetlogin->execute(array($_SESSION['email']));
-            $infologin = $requetegetlogin->fetch();
-            return $infologin;
+        if ($this->isConnected() === true) {
+            $login = $this->_login;
+            return $login;
         } else {
-            echo "C'est pas bon";
+            return false;
         }
     }
-    public function GetEmail()
+    //retourne l'adresse email de l'utilisateur 
+    public function getEmail()
     {
-        if ($this->isConnected() == true) 
-        {
-            $requetegetlogin = $this->bdh->prepare('SELECT email from utilisateurs WHERE email = ?');
-            $requetegetlogin->execute(array($_SESSION['email']));
-            $infologin = $requetegetlogin->fetch();
-            return $infologin;
+        if ($this->isConnected() === true) {
+            $email = $this->_email;
+            return $email;
         } else {
-            echo "C'est pas bon";
+            return false;
         }
     }
-    public function GetFirstname()
+    // retourne le firstname de l'utilisateur
+    public function getFirstName()
     {
-        if ($this->isConnected() == true) 
-        {
-            $requetegetlogin = $this->bdh->prepare('SELECT firstname from utilisateurs WHERE email = ?');
-            $requetegetlogin->execute(array($_SESSION['email']));
-            $infologin = $requetegetlogin->fetch();
-            return $infologin;
+        if ($this->isConnected() === true) {
+            $firstname = $this->_firstname;
+            return $firstname;
         } else {
-            echo "C'est pas bon";
+            return false;
         }
     }
-    public function GetLastname()
+    // retourne la lastname de l'utilisateur
+    public function getLastName()
     {
-        if ($this->isConnected() == true) 
-        {
-            $requetegetlogin = $this->bdh->prepare('SELECT lastname from utilisateurs WHERE email = ?');
-            $requetegetlogin->execute(array($_SESSION['email']));
-            $infologin = $requetegetlogin->fetch();
-            return $infologin;
+        if ($this->isConnected() === true) {
+            $lastname = $this->_lastname;
+            return $lastname;
         } else {
-            echo "C'est pas bon";
+            return false;
         }
     }
 }

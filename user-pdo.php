@@ -102,9 +102,9 @@ class User extends db
         exit();
     }
 
-    public function delete($email)
+    public function delete()
     {
-        $reqdeleteutilisateur = "DELETE * FROM utilisateurs where email = '$email'";
+        $reqdeleteutilisateur = "DELETE * FROM utilisateurs where email = '_$this->email'";
         $prepdeleteutilisateur = $this->bdh->prepare($reqdeleteutilisateur);
         $executerequetedelete = $prepdeleteutilisateur->execute();
         unset($_SESSION['profil']);
