@@ -1,11 +1,8 @@
 <?php 
 session_start();
 include'./user.php';
-
-$bdd = new User();
-
-
-$user = new User();
+$user = new User("test","test@gmail.com","test","test");
+var_dump($user->bdh);
 
 
 if (!empty($_POST['login']) && !empty($_POST['password']) ) {
